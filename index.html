@@ -160,7 +160,6 @@
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center space-x-4 space-x-reverse">
                         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center shadow-md cursor-pointer" onclick="showLogoSettings()">
-                            <img id="platformLogo" src="" alt="🏥" class="w-full h-full rounded-full object-cover hidden">
                             <span id="defaultLogo" class="text-white font-bold">🏥</span>
                         </div>
                         <div>
@@ -983,6 +982,13 @@
                     loadMaterialsByType(materialType, exam);
                     document.getElementById('materialsTitle').textContent = `${document.getElementById('subjectTitle').textContent} - ${document.querySelector('.material-tab.active').textContent.trim()} (${activeTab.textContent.trim()})`;
                 }
+                
+                function toggleYear(year) {
+                    const content = document.getElementById(`year-${year}`);
+                    const arrow = document.getElementById(`arrow-${year}`);
+                    content.classList.toggle('hidden');
+                    arrow.classList.toggle('rotate-90');
+                }
 
                 // --- Firebase Functions ---
                 
@@ -1494,38 +1500,36 @@
                     });
                 }
 
-                // Initialize the application
-                document.addEventListener('DOMContentLoaded', function() {
-                    // This is where we add the event listeners for the buttons
-                    const loginBtn = document.getElementById('loginBtn');
-                    const registerBtn = document.getElementById('registerBtn');
-                    const heroLoginBtn = document.getElementById('heroLoginBtn');
-
-                    if (loginBtn) {
-                        loginBtn.addEventListener('click', showLoginModal);
-                    }
-                    if (registerBtn) {
-                        registerBtn.addEventListener('click', showRegisterModal);
-                    }
-                    if (heroLoginBtn) {
-                        heroLoginBtn.addEventListener('click', showLoginModal);
-                    }
-                });
-
-                // Function to handle the user menu and settings
-                function init() {
+                function initEventlisteners() {
+                    // Home Page Buttons
+                    document.getElementById('loginBtn').addEventListener('click', showLoginModal);
+                    document.getElementById('registerBtn').addEventListener('click', showRegisterModal);
+                    document.getElementById('heroLoginBtn').addEventListener('click', showLoginModal);
+                    
+                    // User Menu Button
                     document.getElementById('userMenuBtn').addEventListener('click', function() {
                         const dropdown = document.getElementById('userDropdown');
                         dropdown.classList.toggle('hidden');
                     });
-
+                    
                     // Hide dropdown when clicking outside
                     window.addEventListener('click', function(e) {
                         if (!document.getElementById('userMenuBtn').contains(e.target) && !document.getElementById('userDropdown').contains(e.target)) {
                             document.getElementById('userDropdown').classList.add('hidden');
                         }
                     });
+                    
+                    // Back to Subjects button
+                    document.getElementById('backToSubjects').addEventListener('click', () => {
+                        document.getElementById('subjectMaterials').classList.add('hidden');
+                        document.getElementById('semesterContent').classList.remove('hidden');
+                    });
                 }
+
+                // Initialize the application
+                document.addEventListener('DOMContentLoaded', function() {
+                    initEventlisteners();
+                });
             </script>
 </body>
 </html>
