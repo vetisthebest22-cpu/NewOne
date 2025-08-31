@@ -1531,5 +1531,177 @@
                     initEventlisteners();
                 });
             </script>
+<script>
+    // Global data object
+    let academicData = {
+        settings: {
+            logo: '',
+            theme: 'light'
+        },
+        user: {
+            name: 'طالب الطب البيطري',
+            year: 1,
+            role: 'user', // Can be 'user' or 'admin'
+            profilePic: ''
+        },
+        announcements: [],
+        posts: [],
+        exams: [],
+        materials: {}
+    };
+
+    // Helper functions for modals
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.remove('hidden');
+    }
+
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    // Function to show the login modal
+    function showLoginModal() {
+        showModal('loginModal');
+    }
+
+    // Function to show the registration modal
+    function showRegisterModal() {
+        hideModal('loginModal');
+        showModal('registerModal');
+    }
+
+    // Function to show the forgot password modal
+    function showForgotPasswordModal() {
+        hideModal('loginModal');
+        showModal('forgotPasswordModal');
+    }
+
+    // Function to show the main platform
+    function showMainPlatform() {
+        document.getElementById('homePage').classList.add('hidden');
+        document.getElementById('mainPlatform').classList.remove('hidden');
+        updateUserInfo();
+        checkUserRole();
+        loadAnnouncements();
+        // Initially show welcome section
+        document.getElementById('welcomeSection').classList.remove('hidden');
+    }
+
+    // Function to switch between main tabs (Academic, Posts, etc.)
+    function switchMainTab(tabId) {
+        const tabs = ['academicSection', 'postsSection', 'examsSection', 'chatSection', 'adminSection'];
+        tabs.forEach(tab => {
+            document.getElementById(tab).classList.add('hidden');
+        });
+        document.getElementById(tabId).classList.remove('hidden');
+
+        // Update active tab style
+        const mainTabs = document.querySelectorAll('.main-tab');
+        mainTabs.forEach(tab => {
+            tab.classList.remove('active', 'text-purple-600', 'border-purple-600');
+            tab.classList.add('text-gray-600', 'hover:text-purple-600');
+        });
+
+        const activeTab = document.querySelector(`.main-tab[data-tab='${tabId.replace('Section', '')}']`);
+        if (activeTab) {
+            activeTab.classList.add('active', 'text-purple-600', 'border-purple-600');
+            activeTab.classList.remove('text-gray-600', 'hover:text-purple-600');
+        }
+    }
+
+    // Function to show user settings modal
+    function showUserSettings() {
+        showModal('userSettingsModal');
+    }
+
+    // Function to show profile picture modal
+    function showProfilePictureModal() {
+        showModal('profilePictureModal');
+    }
+    
+    // Function to show logo settings modal
+    function showLogoSettings() {
+        showModal('logoSettingsModal');
+    }
+    
+    // Function to show notifications modal
+    function showNotifications() {
+        showModal('notificationsModal');
+    }
+
+    // Function to show create post section
+    function showCreatePost() {
+        document.getElementById('createPostSection').classList.remove('hidden');
+    }
+
+    // Function to cancel creating a post
+    function cancelCreatePost() {
+        document.getElementById('createPostSection').classList.add('hidden');
+        document.getElementById('createPostForm').reset();
+    }
+    
+    // Initialize the application
+    function init() {
+        // Event listeners for login/register buttons from the home page
+        document.querySelectorAll('button[onclick="showLoginModal()"]').forEach(btn => {
+            btn.addEventListener('click', showLoginModal);
+        });
+        document.querySelectorAll('button[onclick="showRegisterModal()"]').forEach(btn => {
+            btn.addEventListener('click', showRegisterModal);
+        });
+
+        // Event listener for user menu
+        document.getElementById('userMenuBtn').addEventListener('click', function() {
+            document.getElementById('userDropdown').classList.toggle('hidden');
+        });
+        document.addEventListener('click', function(event) {
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+            if (userMenuBtn && userDropdown && !userMenuBtn.contains(event.target) && !userDropdown.contains(event.target)) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+        
+        // Event listener for logout button
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            // Placeholder for logout logic
+            document.getElementById('mainPlatform').classList.add('hidden');
+            document.getElementById('homePage').classList.remove('hidden');
+            document.getElementById('userDropdown').classList.add('hidden');
+        });
+    }
+
+    // Simplified placeholder functions
+    function updateUserInfo() { /* ... */ }
+    function checkUserRole() { /* ... */ }
+    function loadAnnouncements() { /* ... */ }
+    function toggleYear(yearId) {
+        const content = document.getElementById(`year-${yearId}`);
+        const arrow = document.getElementById(`arrow-${yearId}`);
+        content.classList.toggle('hidden');
+        if (content.classList.contains('hidden')) {
+            arrow.style.transform = 'rotate(0deg)';
+        } else {
+            arrow.style.transform = 'rotate(-90deg)';
+        }
+    }
+    function showSemester(year, semester) {
+        document.getElementById('welcomeSection').classList.add('hidden');
+        document.getElementById('semesterContent').classList.remove('hidden');
+        document.getElementById('subjectMaterials').classList.add('hidden');
+        document.getElementById('currentYear').textContent = `السنة ${year}`;
+        document.getElementById('currentSemester').textContent = `الفصل ${semester}`;
+        // Placeholder for loading subjects
+    }
+    function showSubjectMaterials(subject) { /* ... */ }
+    function switchMaterialTab(type) { /* ... */ }
+    function switchExamTab(exam) { /* ... */ }
+    function sendMessage() { /* ... */ }
+
+    // Initialize the application on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        init();
+    });
+</script>
 </body>
 </html>
