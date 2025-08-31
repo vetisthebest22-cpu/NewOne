@@ -81,10 +81,10 @@
                     </div>
                     
                     <div class="flex items-center space-x-4 space-x-reverse">
-                        <button onclick="showLoginModal()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md">
+                        <button id="loginBtn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-md">
                             🔑 تسجيل الدخول
                         </button>
-                        <button onclick="showRegisterModal()" class="px-6 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium">
+                        <button id="registerBtn" class="px-6 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium">
                             📝 إنشاء حساب
                         </button>
                     </div>
@@ -98,7 +98,7 @@
                     <h1 class="text-5xl font-bold mb-6">مرحباً بك في المنصة الأكاديمية</h1>
                     <p class="text-xl mb-8 opacity-90">منصة شاملة لطلبة كلية الطب البيطري - جميع المصادر الأكاديمية في مكان واحد</p>
                     <div class="flex justify-center space-x-4 space-x-reverse">
-                        <button onclick="showLoginModal()" class="px-8 py-3 bg-white text-purple-700 rounded-lg hover:bg-gray-100 transition-colors font-semibold shadow-lg">
+                        <button id="heroLoginBtn" class="px-8 py-3 bg-white text-purple-700 rounded-lg hover:bg-gray-100 transition-colors font-semibold shadow-lg">
                             🚀 ابدأ الآن
                         </button>
                         <button class="px-8 py-3 border-2 border-white text-white rounded-lg hover:bg-white hover:text-purple-700 transition-colors font-semibold">
@@ -1120,12 +1120,23 @@
 
                 // Initialize the application
                 document.addEventListener('DOMContentLoaded', function() {
-                    // Firebase handles user session, so we don't need to manually check localStorage
-                    // loadData(); // This is replaced by the onAuthStateChanged listener
-                    init();
+                    // This is where we add the event listeners for the buttons
+                    const loginBtn = document.getElementById('loginBtn');
+                    const registerBtn = document.getElementById('registerBtn');
+                    const heroLoginBtn = document.getElementById('heroLoginBtn');
+
+                    if (loginBtn) {
+                        loginBtn.addEventListener('click', showLoginModal);
+                    }
+                    if (registerBtn) {
+                        registerBtn.addEventListener('click', showRegisterModal);
+                    }
+                    if (heroLoginBtn) {
+                        heroLoginBtn.addEventListener('click', showLoginModal);
+                    }
                 });
 
-                // Function to handle the logo and settings
+                // Function to handle the user menu and settings
                 function init() {
                     document.getElementById('userMenuBtn').addEventListener('click', function() {
                         const dropdown = document.getElementById('userDropdown');
