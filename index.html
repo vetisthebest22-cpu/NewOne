@@ -160,6 +160,7 @@
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center space-x-4 space-x-reverse">
                         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center shadow-md cursor-pointer" onclick="showLogoSettings()">
+                            <img id="platformLogo" src="" alt="🏥" class="w-full h-full rounded-full object-cover hidden">
                             <span id="defaultLogo" class="text-white font-bold">🏥</span>
                         </div>
                         <div>
@@ -982,13 +983,6 @@
                     loadMaterialsByType(materialType, exam);
                     document.getElementById('materialsTitle').textContent = `${document.getElementById('subjectTitle').textContent} - ${document.querySelector('.material-tab.active').textContent.trim()} (${activeTab.textContent.trim()})`;
                 }
-                
-                function toggleYear(year) {
-                    const content = document.getElementById(`year-${year}`);
-                    const arrow = document.getElementById(`arrow-${year}`);
-                    content.classList.toggle('hidden');
-                    arrow.classList.toggle('rotate-90');
-                }
 
                 // --- Firebase Functions ---
                 
@@ -1500,208 +1494,38 @@
                     });
                 }
 
-                function initEventlisteners() {
-                    // Home Page Buttons
-                    document.getElementById('loginBtn').addEventListener('click', showLoginModal);
-                    document.getElementById('registerBtn').addEventListener('click', showRegisterModal);
-                    document.getElementById('heroLoginBtn').addEventListener('click', showLoginModal);
-                    
-                    // User Menu Button
+                // Initialize the application
+                document.addEventListener('DOMContentLoaded', function() {
+                    // This is where we add the event listeners for the buttons
+                    const loginBtn = document.getElementById('loginBtn');
+                    const registerBtn = document.getElementById('registerBtn');
+                    const heroLoginBtn = document.getElementById('heroLoginBtn');
+
+                    if (loginBtn) {
+                        loginBtn.addEventListener('click', showLoginModal);
+                    }
+                    if (registerBtn) {
+                        registerBtn.addEventListener('click', showRegisterModal);
+                    }
+                    if (heroLoginBtn) {
+                        heroLoginBtn.addEventListener('click', showLoginModal);
+                    }
+                });
+
+                // Function to handle the user menu and settings
+                function init() {
                     document.getElementById('userMenuBtn').addEventListener('click', function() {
                         const dropdown = document.getElementById('userDropdown');
                         dropdown.classList.toggle('hidden');
                     });
-                    
+
                     // Hide dropdown when clicking outside
                     window.addEventListener('click', function(e) {
                         if (!document.getElementById('userMenuBtn').contains(e.target) && !document.getElementById('userDropdown').contains(e.target)) {
                             document.getElementById('userDropdown').classList.add('hidden');
                         }
                     });
-                    
-                    // Back to Subjects button
-                    document.getElementById('backToSubjects').addEventListener('click', () => {
-                        document.getElementById('subjectMaterials').classList.add('hidden');
-                        document.getElementById('semesterContent').classList.remove('hidden');
-                    });
                 }
-
-                // Initialize the application
-                document.addEventListener('DOMContentLoaded', function() {
-                    initEventlisteners();
-                });
             </script>
-<script>
-    // Global data object
-    let academicData = {
-        settings: {
-            logo: '',
-            theme: 'light'
-        },
-        user: {
-            name: 'طالب الطب البيطري',
-            year: 1,
-            role: 'user', // Can be 'user' or 'admin'
-            profilePic: ''
-        },
-        announcements: [],
-        posts: [],
-        exams: [],
-        materials: {}
-    };
-
-    // Helper functions for modals
-    function showModal(modalId) {
-        document.getElementById(modalId).classList.remove('hidden');
-    }
-
-    function hideModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
-    }
-
-    // Function to show the login modal
-    function showLoginModal() {
-        showModal('loginModal');
-    }
-
-    // Function to show the registration modal
-    function showRegisterModal() {
-        hideModal('loginModal');
-        showModal('registerModal');
-    }
-
-    // Function to show the forgot password modal
-    function showForgotPasswordModal() {
-        hideModal('loginModal');
-        showModal('forgotPasswordModal');
-    }
-
-    // Function to show the main platform
-    function showMainPlatform() {
-        document.getElementById('homePage').classList.add('hidden');
-        document.getElementById('mainPlatform').classList.remove('hidden');
-        updateUserInfo();
-        checkUserRole();
-        loadAnnouncements();
-        // Initially show welcome section
-        document.getElementById('welcomeSection').classList.remove('hidden');
-    }
-
-    // Function to switch between main tabs (Academic, Posts, etc.)
-    function switchMainTab(tabId) {
-        const tabs = ['academicSection', 'postsSection', 'examsSection', 'chatSection', 'adminSection'];
-        tabs.forEach(tab => {
-            document.getElementById(tab).classList.add('hidden');
-        });
-        document.getElementById(tabId).classList.remove('hidden');
-
-        // Update active tab style
-        const mainTabs = document.querySelectorAll('.main-tab');
-        mainTabs.forEach(tab => {
-            tab.classList.remove('active', 'text-purple-600', 'border-purple-600');
-            tab.classList.add('text-gray-600', 'hover:text-purple-600');
-        });
-
-        const activeTab = document.querySelector(`.main-tab[data-tab='${tabId.replace('Section', '')}']`);
-        if (activeTab) {
-            activeTab.classList.add('active', 'text-purple-600', 'border-purple-600');
-            activeTab.classList.remove('text-gray-600', 'hover:text-purple-600');
-        }
-    }
-
-    // Function to show user settings modal
-    function showUserSettings() {
-        showModal('userSettingsModal');
-    }
-
-    // Function to show profile picture modal
-    function showProfilePictureModal() {
-        showModal('profilePictureModal');
-    }
-    
-    // Function to show logo settings modal
-    function showLogoSettings() {
-        showModal('logoSettingsModal');
-    }
-    
-    // Function to show notifications modal
-    function showNotifications() {
-        showModal('notificationsModal');
-    }
-
-    // Function to show create post section
-    function showCreatePost() {
-        document.getElementById('createPostSection').classList.remove('hidden');
-    }
-
-    // Function to cancel creating a post
-    function cancelCreatePost() {
-        document.getElementById('createPostSection').classList.add('hidden');
-        document.getElementById('createPostForm').reset();
-    }
-    
-    // Initialize the application
-    function init() {
-        // Event listeners for login/register buttons from the home page
-        document.querySelectorAll('button[onclick="showLoginModal()"]').forEach(btn => {
-            btn.addEventListener('click', showLoginModal);
-        });
-        document.querySelectorAll('button[onclick="showRegisterModal()"]').forEach(btn => {
-            btn.addEventListener('click', showRegisterModal);
-        });
-
-        // Event listener for user menu
-        document.getElementById('userMenuBtn').addEventListener('click', function() {
-            document.getElementById('userDropdown').classList.toggle('hidden');
-        });
-        document.addEventListener('click', function(event) {
-            const userMenuBtn = document.getElementById('userMenuBtn');
-            const userDropdown = document.getElementById('userDropdown');
-            if (userMenuBtn && userDropdown && !userMenuBtn.contains(event.target) && !userDropdown.contains(event.target)) {
-                userDropdown.classList.add('hidden');
-            }
-        });
-        
-        // Event listener for logout button
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            // Placeholder for logout logic
-            document.getElementById('mainPlatform').classList.add('hidden');
-            document.getElementById('homePage').classList.remove('hidden');
-            document.getElementById('userDropdown').classList.add('hidden');
-        });
-    }
-
-    // Simplified placeholder functions
-    function updateUserInfo() { /* ... */ }
-    function checkUserRole() { /* ... */ }
-    function loadAnnouncements() { /* ... */ }
-    function toggleYear(yearId) {
-        const content = document.getElementById(`year-${yearId}`);
-        const arrow = document.getElementById(`arrow-${yearId}`);
-        content.classList.toggle('hidden');
-        if (content.classList.contains('hidden')) {
-            arrow.style.transform = 'rotate(0deg)';
-        } else {
-            arrow.style.transform = 'rotate(-90deg)';
-        }
-    }
-    function showSemester(year, semester) {
-        document.getElementById('welcomeSection').classList.add('hidden');
-        document.getElementById('semesterContent').classList.remove('hidden');
-        document.getElementById('subjectMaterials').classList.add('hidden');
-        document.getElementById('currentYear').textContent = `السنة ${year}`;
-        document.getElementById('currentSemester').textContent = `الفصل ${semester}`;
-        // Placeholder for loading subjects
-    }
-    function showSubjectMaterials(subject) { /* ... */ }
-    function switchMaterialTab(type) { /* ... */ }
-    function switchExamTab(exam) { /* ... */ }
-    function sendMessage() { /* ... */ }
-
-    // Initialize the application on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        init();
-    });
-</script>
 </body>
 </html>
