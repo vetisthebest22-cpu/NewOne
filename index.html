@@ -10,6 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-storage.js"></script>
 
     <script>
         // REPLACE WITH YOUR FIREBASE CONFIG
@@ -24,6 +25,7 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const storage = firebase.storage();
 
         tailwind.config = {
             theme: {
@@ -595,7 +597,7 @@
                         <div id="postsFeed" class="space-y-6">
                             </div>
 
-                        <div id="postsEmptyState" class="text-center py-16">
+                        <div id="postsEmptyState" class="text-center py-16 hidden">
                             <div class="text-6xl mb-4">📝</div>
                             <h3 class="text-xl font-semibold text-gray-900 mb-2">لا توجد منشورات بعد</h3>
                             <p class="text-gray-600">ابدأ بإنشاء أول منشور!</p>
@@ -890,6 +892,7 @@
                 let allPosts = [];
                 let allExams = [];
                 let allAnnouncements = [];
+                let currentSubjectId = null; // Keep track of the current subject for file uploads
 
                 // Helper functions to open/close modals
                 function showLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
@@ -912,9 +915,14 @@
                     });
                     document.getElementById(tabName + 'Section').classList.remove('hidden');
                     
-                    document.querySelectorAll('.main-tab').forEach(tab => tab.classList.remove('active', 'text-purple-600', 'border-purple-600'));
-                    document.querySelector(`.main-tab[data-tab="${tabName}"]`).classList.add('active', 'text-purple-600', 'border-purple-600');
-                    document.querySelector(`.main-tab[data-tab="${tabName}"]`).classList.remove('text-gray-600', 'hover:text-purple-600');
+                    document.querySelectorAll('.main-tab').forEach(tab => {
+                        tab.classList.remove('active', 'text-purple-600', 'border-purple-600');
+                        tab.classList.add('text-gray-600', 'hover:text-purple-600');
+                    });
+                    
+                    const activeTab = document.querySelector(`.main-tab[data-tab="${tabName}"]`);
+                    activeTab.classList.add('active', 'text-purple-600', 'border-purple-600');
+                    activeTab.classList.remove('text-gray-600', 'hover:text-purple-600');
 
                     // Load content based on the tab
                     if (tabName === 'posts') {
@@ -923,30 +931,57 @@
                         loadExams();
                     } else if (tabName === 'academic') {
                         // Re-render academic content if needed
+                    } else if (tabName === 'chat') {
+                        loadChatMessages();
                     }
                 }
 
                 function showSemester(year, semester) {
-                    // This function now needs to query Firebase for subjects
                     loadSubjects(year, semester);
-                    // Update UI elements
                     document.getElementById('welcomeSection').classList.add('hidden');
                     document.getElementById('subjectMaterials').classList.add('hidden');
                     document.getElementById('semesterContent').classList.remove('hidden');
                     document.getElementById('currentYear').textContent = `السنة ${year}`;
                     document.getElementById('currentSemester').textContent = `الفصل ${semester}`;
-                    document.querySelectorAll('.semester-btn').forEach(btn => btn.classList.remove('sidebar-item active'));
+                    document.querySelectorAll('.semester-btn').forEach(btn => btn.classList.remove('sidebar-item', 'active'));
                     document.querySelector(`[onclick="showSemester(${year}, ${semester})"]`).classList.add('sidebar-item', 'active');
                 }
 
                 function showSubjectMaterials(subjectId, subjectName, year, semester) {
-                    // Load materials from Firebase based on subject ID
+                    currentSubjectId = subjectId;
                     loadMaterials(subjectId, subjectName, year, semester);
-                    // Update UI
                     document.getElementById('semesterContent').classList.add('hidden');
                     document.getElementById('subjectMaterials').classList.remove('hidden');
                     document.getElementById('subjectTitle').textContent = subjectName;
                     document.getElementById('subjectInfo').textContent = `السنة ${year} - الفصل ${semester}`;
+                }
+
+                function switchMaterialTab(type) {
+                    document.querySelectorAll('.material-tab').forEach(tab => {
+                        tab.classList.remove('active', 'border-purple-600', 'text-purple-600');
+                        tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+                    });
+                    const activeTab = document.querySelector(`.material-tab[data-type="${type}"]`);
+                    activeTab.classList.add('active', 'border-purple-600', 'text-purple-600');
+                    activeTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+                    
+                    const examType = document.querySelector('.exam-tab.active').dataset.exam;
+                    loadMaterialsByType(type, examType);
+                    document.getElementById('materialsTitle').textContent = `${document.getElementById('subjectTitle').textContent} - ${activeTab.textContent.trim()} (${document.querySelector('.exam-tab.active').textContent.trim()})`;
+                }
+
+                function switchExamTab(exam) {
+                    document.querySelectorAll('.exam-tab').forEach(tab => {
+                        tab.classList.remove('active', 'bg-purple-600', 'text-white');
+                        tab.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    const activeTab = document.querySelector(`.exam-tab[data-exam="${exam}"]`);
+                    activeTab.classList.add('active', 'bg-purple-600', 'text-white');
+                    activeTab.classList.remove('bg-gray-200', 'text-gray-700');
+                    
+                    const materialType = document.querySelector('.material-tab.active').dataset.type;
+                    loadMaterialsByType(materialType, exam);
+                    document.getElementById('materialsTitle').textContent = `${document.getElementById('subjectTitle').textContent} - ${document.querySelector('.material-tab.active').textContent.trim()} (${activeTab.textContent.trim()})`;
                 }
 
                 // --- Firebase Functions ---
@@ -1016,6 +1051,7 @@
                                     document.getElementById('addSubjectBtn').classList.remove('hidden');
                                     document.getElementById('addExamBtn').classList.remove('hidden');
                                     document.getElementById('editAnnouncementsBtn').classList.remove('hidden');
+                                    document.getElementById('uploadSection').classList.remove('hidden');
                                 }
                                 document.getElementById('userName').textContent = userData.fullName;
                                 document.getElementById('userFullName').textContent = userData.fullName;
@@ -1047,7 +1083,7 @@
                                 subjectCard.innerHTML = `
                                     <div class="text-3xl mb-3">📚</div>
                                     <h3 class="font-semibold text-gray-900 mb-2">${subject.name}</h3>
-                                    <p class="text-sm text-gray-600">${subject.lectures} محاضرات</p>
+                                    <p class="text-sm text-gray-600">محاضرات</p>
                                 `;
                                 subjectsGrid.appendChild(subjectCard);
                             });
@@ -1056,24 +1092,43 @@
                             console.error("Error loading subjects: ", error);
                         });
                 }
+
+                // Function to add a new subject
+                document.getElementById('addSubjectForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('newSubjectName').value;
+                    const year = document.getElementById('newSubjectYear').value;
+                    const semester = document.getElementById('newSubjectSemester').value;
+                    
+                    db.collection('subjects').add({
+                        name: name,
+                        year: parseInt(year),
+                        semester: parseInt(semester),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        closeAddSubjectModal();
+                        alert('تم إضافة المادة بنجاح!');
+                        loadSubjects(parseInt(year), parseInt(semester)); // Reload the subjects list
+                    }).catch(error => {
+                        console.error("Error adding subject: ", error);
+                    });
+                });
                 
                 // Function to load materials from Firestore
                 function loadMaterials(subjectId, subjectName, year, semester) {
-                    const materialsList = document.getElementById('materialsList');
-                    materialsList.innerHTML = '';
-                    document.getElementById('materialsTitle').textContent = `${subjectName} - السلايدات`;
-                    
                     db.collection('materials').where('subjectId', '==', subjectId).get()
                         .then(snapshot => {
-                            const materials = snapshot.docs.map(doc => doc.data());
-                            renderMaterials(materials.filter(m => m.type === 'slides' && m.exam === 'mid'));
+                            allMaterials = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            const materialType = document.querySelector('.material-tab.active').dataset.type;
+                            const examType = document.querySelector('.exam-tab.active').dataset.exam;
+                            renderMaterials(allMaterials.filter(m => m.type === materialType && m.exam === examType));
                         })
                         .catch(error => {
                             console.error("Error loading materials: ", error);
                         });
                 }
                 
-                // Function to render materials (unchanged logic, just uses the data)
+                // Function to render materials based on filter
                 function renderMaterials(materials) {
                     const materialsList = document.getElementById('materialsList');
                     materialsList.innerHTML = '';
@@ -1088,7 +1143,7 @@
                                 <span class="text-3xl">📄</span>
                                 <div class="flex-1">
                                     <h4 class="font-medium text-gray-800">${material.title}</h4>
-                                    <p class="text-sm text-gray-500">${material.lecturer} - ${material.type}</p>
+                                    <p class="text-sm text-gray-500">${material.type} - ${material.exam}</p>
                                 </div>
                                 <a href="${material.url}" target="_blank" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">تحميل</a>
                             `;
@@ -1097,26 +1152,347 @@
                     }
                 }
                 
-                // Function to load announcements
+                // File and URL upload functions
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+
+                uploadArea.addEventListener('click', () => fileInput.click());
+                uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+                uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        uploadFiles(files);
+                    }
+                });
+                fileInput.addEventListener('change', (e) => {
+                    uploadFiles(e.target.files);
+                });
+
+                function uploadFiles(files) {
+                    if (!currentSubjectId) {
+                        alert('يجب تحديد مادة أولاً!');
+                        return;
+                    }
+
+                    for (const file of files) {
+                        const fileTitle = file.name;
+                        const storageRef = storage.ref(`materials/${currentSubjectId}/${file.name}`);
+                        const uploadTask = storageRef.put(file);
+
+                        uploadTask.on('state_changed', 
+                            (snapshot) => {
+                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                console.log('Upload is ' + progress + '% done');
+                            },
+                            (error) => {
+                                console.error("Upload failed: ", error);
+                                alert('فشل في رفع الملف: ' + error.message);
+                            },
+                            () => {
+                                uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                                    console.log('File available at', downloadURL);
+                                    saveMaterialToFirestore(fileTitle, downloadURL, file.type, 'mid', currentSubjectId);
+                                });
+                            }
+                        );
+                    }
+                }
+
+                document.getElementById('addUrlBtn').addEventListener('click', () => {
+                    const url = document.getElementById('urlInput').value;
+                    if (url && currentSubjectId) {
+                        const urlTitle = url.split('/').pop() || 'مادة';
+                        saveMaterialToFirestore(urlTitle, url, 'link', 'mid', currentSubjectId);
+                        document.getElementById('urlInput').value = '';
+                    } else {
+                        alert('يرجى إدخال رابط صالح واختيار مادة.');
+                    }
+                });
+
+                function saveMaterialToFirestore(title, url, type, exam, subjectId) {
+                    db.collection('materials').add({
+                        title: title,
+                        url: url,
+                        type: type.split('/')[0],
+                        exam: exam,
+                        subjectId: subjectId,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        alert('تم إضافة الملف بنجاح!');
+                        loadMaterials(currentSubjectId);
+                    }).catch(error => {
+                        console.error("Error adding material: ", error);
+                    });
+                }
+                
+                // Function to load announcements from Firestore
                 function loadAnnouncements() {
                     const sidebarAnnouncements = document.getElementById('sidebarAnnouncements');
                     sidebarAnnouncements.innerHTML = '';
-                    db.collection('announcements').orderBy('timestamp', 'desc').limit(5).get()
+                    db.collection('posts').where('type', '==', 'announcement').orderBy('timestamp', 'desc').limit(5).get()
                         .then(snapshot => {
-                            snapshot.forEach(doc => {
-                                const announcement = doc.data();
-                                const announcementItem = document.createElement('p');
-                                announcementItem.className = 'text-sm text-purple-700 leading-relaxed';
-                                announcementItem.textContent = announcement.content;
-                                sidebarAnnouncements.appendChild(announcementItem);
-                            });
+                            if (snapshot.empty) {
+                                sidebarAnnouncements.innerHTML = `<p class="text-sm text-purple-700 leading-relaxed">لا توجد إعلانات حالياً.</p>`;
+                            } else {
+                                snapshot.forEach(doc => {
+                                    const announcement = doc.data();
+                                    const announcementItem = document.createElement('p');
+                                    announcementItem.className = 'text-sm text-purple-700 leading-relaxed';
+                                    announcementItem.textContent = announcement.content;
+                                    sidebarAnnouncements.appendChild(announcementItem);
+                                });
+                            }
                         })
                         .catch(error => {
                             console.error("Error loading announcements: ", error);
                         });
                 }
+                
+                // Posts functions
+                let currentPostType = 'normal';
+                function showCreatePost() {
+                    document.getElementById('createPostSection').classList.remove('hidden');
+                }
+                function cancelCreatePost() {
+                    document.getElementById('createPostSection').classList.add('hidden');
+                    document.getElementById('createPostForm').reset();
+                    document.getElementById('pollOptions').classList.add('hidden');
+                    selectPostType('normal');
+                }
+                function selectPostType(type) {
+                    currentPostType = type;
+                    document.querySelectorAll('.post-type-btn').forEach(btn => {
+                        btn.classList.remove('bg-purple-600', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    document.querySelector(`.post-type-btn[data-type="${type}"]`).classList.remove('bg-gray-200', 'text-gray-700');
+                    document.querySelector(`.post-type-btn[data-type="${type}"]`).classList.add('bg-purple-600', 'text-white');
+                    document.getElementById('pollOptions').classList.toggle('hidden', type !== 'poll');
+                }
+                function addPollChoice() {
+                    const pollChoices = document.getElementById('pollChoices');
+                    const newChoice = document.createElement('input');
+                    newChoice.type = 'text';
+                    newChoice.className = 'poll-choice w-full px-3 py-2 border border-gray-300 rounded-lg';
+                    newChoice.placeholder = `الخيار ${pollChoices.children.length + 1}`;
+                    pollChoices.appendChild(newChoice);
+                }
+                document.getElementById('createPostForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const content = document.getElementById('postContent').value;
+                    const targetYear = document.getElementById('targetYear').value;
+                    const priority = document.getElementById('postPriority').value;
+                    const images = document.getElementById('postImages').files;
+                    let imageUrls = [];
+                    
+                    if (images.length > 0) {
+                        for (const image of images) {
+                            const storageRef = storage.ref(`posts/${Date.now()}_${image.name}`);
+                            const uploadTask = await storageRef.put(image);
+                            const url = await uploadTask.ref.getDownloadURL();
+                            imageUrls.push(url);
+                        }
+                    }
 
-                // ... other functions (loadPosts, loadExams, etc.) will also need to be converted to use Firestore ...
+                    const postData = {
+                        author: currentUser.uid,
+                        authorName: document.getElementById('userFullName').textContent,
+                        content: content,
+                        targetYear: targetYear,
+                        priority: priority,
+                        type: currentPostType,
+                        images: imageUrls,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    if (currentPostType === 'poll') {
+                        const pollChoices = Array.from(document.querySelectorAll('.poll-choice')).map(input => input.value).filter(val => val);
+                        postData.poll = {
+                            choices: pollChoices.map(choice => ({ text: choice, votes: 0 })),
+                            voters: []
+                        };
+                    }
+
+                    db.collection('posts').add(postData)
+                        .then(() => {
+                            alert('تم نشر المنشور بنجاح!');
+                            cancelCreatePost();
+                            loadPosts();
+                            if (currentPostType === 'announcement') {
+                                loadAnnouncements();
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error adding post: ", error);
+                            alert('فشل في نشر المنشور.');
+                        });
+                });
+                
+                function loadPosts() {
+                    const postsFeed = document.getElementById('postsFeed');
+                    postsFeed.innerHTML = '';
+                    const postsRef = db.collection('posts').orderBy('timestamp', 'desc');
+                    postsRef.onSnapshot(snapshot => {
+                        postsFeed.innerHTML = '';
+                        if (snapshot.empty) {
+                            document.getElementById('postsEmptyState').classList.remove('hidden');
+                        } else {
+                            document.getElementById('postsEmptyState').classList.add('hidden');
+                            snapshot.forEach(doc => {
+                                const post = doc.data();
+                                const postElement = document.createElement('div');
+                                postElement.className = 'bg-white rounded-lg shadow-md p-6 border border-gray-100 fade-in';
+                                postElement.innerHTML = `
+                                    <div class="flex items-start space-x-4 space-x-reverse mb-4">
+                                        <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                            ${post.authorName[0]}
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-gray-900">${post.authorName}</h4>
+                                            <p class="text-xs text-gray-500">${post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString('ar-SA') : 'الآن'}</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-800 mb-4">${post.content}</p>
+                                    ${post.images && post.images.length > 0 ? `<div class="mt-4"><img src="${post.images[0]}" class="rounded-lg max-h-64 w-full object-cover"></div>` : ''}
+                                `;
+                                postsFeed.appendChild(postElement);
+                            });
+                        }
+                    });
+                }
+                
+                // Exams functions
+                document.getElementById('addExamForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const subject = document.getElementById('newExamSubject').value;
+                    const year = document.getElementById('newExamYear').value;
+                    const date = document.getElementById('newExamDate').value;
+                    const time = document.getElementById('newExamTime').value;
+                    
+                    db.collection('exams').add({
+                        subject: subject,
+                        year: parseInt(year),
+                        date: new Date(`${date}T${time}`),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        closeAddExamModal();
+                        alert('تم إضافة الامتحان بنجاح!');
+                        loadExams();
+                    }).catch(error => {
+                        console.error("Error adding exam: ", error);
+                    });
+                });
+                
+                function loadExams() {
+                    const examsCalendar = document.getElementById('examsCalendar');
+                    examsCalendar.innerHTML = '';
+                    const examsRef = db.collection('exams').orderBy('date', 'asc');
+                    examsRef.onSnapshot(snapshot => {
+                        examsCalendar.innerHTML = '';
+                        if (snapshot.empty) {
+                            document.getElementById('examsEmptyState').classList.remove('hidden');
+                        } else {
+                            document.getElementById('examsEmptyState').classList.add('hidden');
+                            snapshot.forEach(doc => {
+                                const exam = doc.data();
+                                const examDate = exam.date.toDate();
+                                const examItem = document.createElement('div');
+                                examItem.className = 'bg-white rounded-lg shadow-md p-6 border border-gray-100 card-hover';
+                                examItem.innerHTML = `
+                                    <div class="flex items-center space-x-3 space-x-reverse mb-3">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-xl">📅</div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900">${exam.subject}</h3>
+                                            <p class="text-sm text-gray-600">السنة ${exam.year}</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 font-medium">التاريخ: ${examDate.toLocaleDateString('ar-SA')}</p>
+                                    <p class="text-gray-700 font-medium">الوقت: ${examDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</p>
+                                `;
+                                examsCalendar.appendChild(examItem);
+                            });
+                        }
+                    });
+                }
+                
+                function filterExams() {
+                    const yearFilter = document.getElementById('examYearFilter').value;
+                    const examsRef = yearFilter === 'all' ? db.collection('exams').orderBy('date', 'asc') : db.collection('exams').where('year', '==', parseInt(yearFilter)).orderBy('date', 'asc');
+                    
+                    examsRef.onSnapshot(snapshot => {
+                        const examsCalendar = document.getElementById('examsCalendar');
+                        examsCalendar.innerHTML = '';
+                        if (snapshot.empty) {
+                            document.getElementById('examsEmptyState').classList.remove('hidden');
+                        } else {
+                            document.getElementById('examsEmptyState').classList.add('hidden');
+                            snapshot.forEach(doc => {
+                                const exam = doc.data();
+                                const examDate = exam.date.toDate();
+                                const examItem = document.createElement('div');
+                                examItem.className = 'bg-white rounded-lg shadow-md p-6 border border-gray-100 card-hover';
+                                examItem.innerHTML = `
+                                    <div class="flex items-center space-x-3 space-x-reverse mb-3">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-xl">📅</div>
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900">${exam.subject}</h3>
+                                            <p class="text-sm text-gray-600">السنة ${exam.year}</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 font-medium">التاريخ: ${examDate.toLocaleDateString('ar-SA')}</p>
+                                    <p class="text-gray-700 font-medium">الوقت: ${examDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</p>
+                                `;
+                                examsCalendar.appendChild(examItem);
+                            });
+                        }
+                    });
+                }
+                
+                // Chat functions
+                function sendMessage() {
+                    const chatInput = document.getElementById('chatInput');
+                    const message = chatInput.value.trim();
+                    if (message && currentUser) {
+                        db.collection('chat').add({
+                            senderId: currentUser.uid,
+                            senderName: document.getElementById('userFullName').textContent,
+                            message: message,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(() => {
+                            chatInput.value = '';
+                        }).catch(error => {
+                            console.error("Error sending message: ", error);
+                        });
+                    }
+                }
+                
+                function loadChatMessages() {
+                    const chatMessages = document.getElementById('chatMessages');
+                    db.collection('chat').orderBy('timestamp', 'asc').limit(50).onSnapshot(snapshot => {
+                        chatMessages.innerHTML = '';
+                        snapshot.forEach(doc => {
+                            const message = doc.data();
+                            const isCurrentUser = message.senderId === currentUser.uid;
+                            const messageElement = document.createElement('div');
+                            messageElement.className = `flex items-start space-x-3 space-x-reverse ${isCurrentUser ? 'justify-end' : ''}`;
+                            messageElement.innerHTML = `
+                                <div class="w-8 h-8 ${isCurrentUser ? 'hidden' : 'bg-purple-600'} rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                                    ${isCurrentUser ? '' : message.senderName[0]}
+                                </div>
+                                <div class="${isCurrentUser ? 'bg-purple-600 text-white' : 'bg-purple-100'} rounded-lg p-3 max-w-xs">
+                                    <div class="text-sm font-medium ${isCurrentUser ? '' : 'text-purple-900'}">${message.senderName}</div>
+                                    <div class="text-sm">${message.message}</div>
+                                    <div class="text-xs ${isCurrentUser ? 'text-gray-200' : 'text-purple-500'} mt-1">${message.timestamp ? new Date(message.timestamp.seconds * 1000).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : 'الآن'}</div>
+                                </div>
+                            `;
+                            chatMessages.appendChild(messageElement);
+                        });
+                        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to the bottom
+                    });
+                }
 
                 // Initialize the application
                 document.addEventListener('DOMContentLoaded', function() {
